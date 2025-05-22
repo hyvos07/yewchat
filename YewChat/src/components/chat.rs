@@ -159,6 +159,12 @@ impl Component for Chat {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let submit = ctx.link().callback(|_| Msg::SubmitMessage);
+        let (user_context, _) = ctx
+            .link()
+            .context::<User>(Callback::noop())
+            .expect("User context to be set");
+        let current_username = user_context.username.borrow().clone();
+
         html! {
             <div class="flex w-screen">
                 <div class="flex-none w-56 h-screen bg-zinc-700">
@@ -189,8 +195,14 @@ impl Component for Chat {
                         {
                             self.messages.iter().map(|m| {
                                 let user = self.users.iter().find(|u| u.name == m.from).unwrap();
+                                let is_current_user = m.from == current_username;
+                                let message_class = if is_current_user {
+                                    "flex items-end w-3/6 bg-blue-100 m-8 ml-auto rounded-tl-lg rounded-tr-lg rounded-bl-lg"
+                                } else {
+                                    "flex items-end w-3/6 bg-gray-100 m-8 rounded-tl-lg rounded-tr-lg rounded-br-lg"
+                                };
                                 html!{
-                                    <div class="flex items-end w-3/6 bg-gray-100 m-8 rounded-tl-lg rounded-tr-lg rounded-br-lg ">
+                                    <div class={message_class}>
                                         <img class="w-8 h-8 rounded-full m-3" src={user.avatar.clone()} alt="avatar"/>
                                         <div class="p-3">
                                             <div class="text-sm">

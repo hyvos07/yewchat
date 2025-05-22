@@ -3,14 +3,20 @@ import WebSocket, { WebSocketServer } from 'ws';
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8080;
 interface User {
     ws: WebSocket;
-    nick: String;
+    user: UserProfile;
     isAlive: boolean;
 }
 
+interface UserProfile {
+    name: string,
+    avatar: string,
+    bio: string,
+}
+
 interface Message {
-    messageType: String;
-    data: String;
-    dataArray: String[];
+    messageType: string;
+    data: string;
+    dataArray: string[];
 }
 
 let users: User[] = [];
@@ -25,10 +31,15 @@ wss.on('connection', (ws: WebSocket) => {
         const raw_data = data.toString();
         try {
             const parsed_data: Message = JSON.parse(raw_data);
+            console.log('Received data from client: \n', parsed_data);
             switch (parsed_data.messageType) {
                 case 'register':
-                    users.push({ ws, nick: parsed_data.data, isAlive: true });
-                    broadcast(JSON.stringify({ messageType: 'users', dataArray: users.map((u) => u.nick) }));
+                    const user: UserProfile = JSON.parse(parsed_data.data);
+                    users.push({ ws, user, isAlive: true });
+                    broadcast(JSON.stringify({
+                        messageType: 'users',
+                        dataArray: users.map((u) => JSON.stringify(u.user)),
+                    }));
                     break;
                 case 'message':
                     const sender = users.find((u) => u.ws === ws);
@@ -37,7 +48,7 @@ wss.on('connection', (ws: WebSocket) => {
                             JSON.stringify({
                                 messageType: 'message',
                                 data: JSON.stringify({
-                                    from: sender.nick,
+                                    from: sender.user.name,
                                     message: parsed_data.data,
                                     time: Date.now(),
                                 }),
@@ -56,13 +67,14 @@ const interval = setInterval(function ping() {
     const updated_users = users.filter((u) => current_clients.includes(u.ws));
     if (updated_users.length !== users.length) {
         users = updated_users;
-        broadcast(JSON.stringify({ messageType: 'users', dataArray: users.map((u) => u.nick) }));
+        broadcast(JSON.stringify({ messageType: 'users', dataArray: users.map((u) => u.user.name) }));
     }
 }, 5000);
 
 const broadcast = (data: any) => {
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
+            console.log('Sending data to client: \n', data);
             client.send(data);
         }
     });

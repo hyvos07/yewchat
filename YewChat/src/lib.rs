@@ -18,6 +18,7 @@ pub type User = Rc<UserInner>;
 #[derive(Debug, PartialEq)]
 pub struct UserInner {
     pub username: RefCell<String>,
+    pub bio: RefCell<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Routable)]
@@ -43,7 +44,8 @@ fn switch(selected_route: &Route) -> Html {
 fn main() -> Html {
     let ctx = use_state(|| {
         Rc::new(UserInner {
-            username: RefCell::new("initial".into()),
+            username: RefCell::new("Name".into()),
+            bio: RefCell::new("Bio".into()),
         })
     });
 
